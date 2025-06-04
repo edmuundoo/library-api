@@ -51,4 +51,18 @@ def test_delete_book(client, auth_headers):
     response = client.delete(f"/books/{book_id}", headers=auth_headers)
     print("[DATA] Response:", response.status_code, response.json())
     assert response.status_code == 200
-    assert response.json()["id"] == book_id 
+    assert response.json()["id"] == book_id
+
+def test_delete_book_with_active_borrow(client, auth_headers):
+    # Создать книгу и читателя
+    book_resp = client.post("/books/", json={"title": "Book7", "author": "Author7", "year": 2026, "isbn": "4444444444", "count": 1}, headers=auth_headers)
+    book_id = book_resp.json()["id"]
+    reader_resp = client.post("/readers/", json={"name": "Edge Reader", "email": "edge@example.com"}, headers=auth_headers)
+    reader_id = reader_resp.json()["id"]
+    # Выдать книгу
+    client.post("/borrow/", json={"reader_id": reader_id, "book_id": book_id}, headers=auth_headers)
+    # Попытка удалить книгу
+    response = client.delete(f"/books/{book_id}", headers=auth_headers)
+    print("[DATA] Response:", response.status_code, response.json())
+    assert response.status_code == 400
+    assert "active borrows" in response.json()["detail"].lower() 

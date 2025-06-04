@@ -60,4 +60,13 @@ def test_return_book_already_returned(client, auth_headers):
     response = client.post(f"/return/", json={"reader_id": reader["id"], "book_id": book["id"]}, headers=auth_headers)
     print("[DATA] Response:", response.status_code, response.json())
     assert response.status_code == 400
-    assert "No active borrow found" in response.json()["detail"] 
+    assert "No active borrow found" in response.json()["detail"]
+
+def test_borrow_book_nonexistent_reader(client, auth_headers):
+    # Создать книгу
+    book = create_book(client, "BookEdge", "isbnEdge", 1, auth_headers).json()
+    # reader_id несуществующий
+    response = client.post("/borrow/", json={"reader_id": 9999, "book_id": book["id"]}, headers=auth_headers)
+    print("[DATA] Response:", response.status_code, response.json())
+    assert response.status_code == 404
+    assert "reader not found" in response.json()["detail"].lower() 
