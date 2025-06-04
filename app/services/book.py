@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.book import Book
 from app.schemas.book import BookCreate, BookUpdate
 from fastapi import HTTPException
+from app.models.borrowed_book import BorrowedBook
 
 def create_book(db: Session, book_in: BookCreate) -> Book:
     if db.query(Book).filter(Book.isbn == book_in.isbn).first():
@@ -40,6 +41,12 @@ def delete_book(db: Session, book_id: int):
     book = db.query(Book).filter(Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
+    active_borrows = db.query(BorrowedBook).filter(
+        BorrowedBook.book_id == book_id,
+        BorrowedBook.return_date == None
+    ).count()
+    if active_borrows > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete book with active borrows")
     db.delete(book)
     db.commit()
     return book 
