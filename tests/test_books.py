@@ -66,3 +66,63 @@ def test_delete_book_with_active_borrow(client, auth_headers):
     print("[DATA] Response:", response.status_code, response.json())
     assert response.status_code == 400
     assert "active borrows" in response.json()["detail"].lower() 
+
+import pytest
+from fastapi import status
+
+def test_create_book_with_description(client, auth_headers):
+    response = client.post(
+        "/books/",
+        json={
+            "title": "Book with Desc",
+            "author": "Author Desc",
+            "year": 2025,
+            "isbn": "desc-123",
+            "count": 1,
+            "description": "Test description"
+        },
+        headers=auth_headers
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert data["description"] == "Test description"
+
+def test_create_book_without_description(client, auth_headers):
+    response = client.post(
+        "/books/",
+        json={
+            "title": "Book without Desc",
+            "author": "Author NoDesc",
+            "year": 2025,
+            "isbn": "nodesc-123",
+            "count": 1
+        },
+        headers=auth_headers
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert "description" in data
+    assert data["description"] is None
+
+def test_update_book_description(client, auth_headers):
+    # Создать книгу без description
+    resp = client.post(
+        "/books/",
+        json={
+            "title": "Book to Update Desc",
+            "author": "Upd Author",
+            "year": 2025,
+            "isbn": "upd-desc-123",
+            "count": 1
+        },
+        headers=auth_headers
+    )
+    book_id = resp.json()["id"]
+    # Обновить description
+    response = client.put(
+        f"/books/{book_id}",
+        json={"description": "Updated description"},
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    assert response.json()["description"] == "Updated description"
